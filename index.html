@@ -1,0 +1,252 @@
+<!-- ملف: form.html -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نموذج التسجيل - دعم دروس</title>
+<!-- Google Fonts: IBM Plex Sans Arabic -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Firebase App (يجب وضع السكريبتات قبل أي كود يستخدم Firebase) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+body{font-family:'IBM Plex Sans Arabic', 'Cairo', Arial, 'Noto Naskh Arabic', Tahoma; background:#f7f7f7; margin:0;}
+.card{max-width:600px;margin:32px auto;background:#fff;padding:28px 18px 18px 18px;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.13);position:relative;overflow:hidden;}
+h2{margin-bottom:18px;text-align:center;color:#1976d2;letter-spacing:1px;font-weight:700;}
+label{display:block;margin:14px 0 7px;font-weight:500;color:#222;letter-spacing:.2px;}
+.input-icon{display:flex;align-items:center;gap:7px;}
+.input-icon svg{width:22px;height:22px;fill:#1976d2;flex-shrink:0;}
+input, select, button, textarea{width:100%;padding:13px 12px 13px 38px;border:1px solid #d0d7e2;border-radius:9px;font-size:17px;transition:box-shadow .2s,border .2s;box-sizing:border-box;background:#fafdff;}
+input:focus, select:focus, textarea:focus{outline:none;box-shadow:0 0 0 2px #90caf9;border-color:#1976d2;background:#fff;}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.row > div{flex:1 1 180px;min-width:140px}
+.teacher-box{margin-top:10px;padding:10px 12px;border-radius:8px;background:#e3f2fd;border:1px solid #bbdefb;color:#0d47a1;font-weight:500;display:flex;align-items:center;gap:7px;}
+.teacher-box svg{width:20px;height:20px;fill:#0d47a1;}
+.actions{display:flex;gap:12px;justify-content:center;margin-top:22px}
+button[type=submit]{background:linear-gradient(90deg,#1976d2 60%,#42a5f5 100%);color:#fff;font-weight:700;border:none;cursor:pointer;transition:background .2s,transform .2s;box-shadow:0 2px 8px #1976d22a;}
+button[type=submit]:hover{background:linear-gradient(90deg,#1565c0 60%,#1976d2 100%);transform:translateY(-2px) scale(1.03);}
+.note{font-size:15px;color:#666;margin-top:10px;text-align:center}
+@media (max-width: 700px){.card{max-width:98vw;padding:7vw 2vw;}.row{flex-direction:column;gap:0;}}
+@media (max-width: 400px){input,select,textarea{font-size:15px;padding:8px 6px 8px 32px;}}
+
+/* نافذة منبثقة */
+.modal-bg{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(25, 118, 210, 0.13);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn .3s;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:16px;max-width:95vw;width:370px;padding:28px 18px;box-shadow:0 8px 32px rgba(25,118,210,0.18);text-align:right;animation:popIn .3s;}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h3{margin-top:0;color:#1976d2;font-size:21px;}
+.modal .details{margin:18px 0 12px 0;line-height:1.8;font-size:16px;}
+.modal .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+.modal button{padding:8px 18px;border-radius:7px;font-size:15px;border:none;cursor:pointer;transition:background .2s,transform .2s;}
+.modal .confirm{background:linear-gradient(90deg,#1976d2 60%,#42a5f5 100%);color:#fff;}
+.modal .confirm:hover{background:linear-gradient(90deg,#1565c0 60%,#1976d2 100%);}
+.modal .cancel{background:#eee;color:#222;}
+.modal .cancel:hover{background:#e3e8f0;}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>نموذج تسجيل طلبة الدعم</h2>
+<form id="supportForm">
+<div class="row">
+<div>
+<label for="firstName"><span class="input-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 16-4 16 0"/></svg> الاسم</span></label>
+<input id="firstName" name="firstName" required placeholder="مثال: سامي">
+</div>
+<div>
+<label for="lastName"><span class="input-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 16-4 16 0"/></svg> اللقب</span></label>
+<input id="lastName" name="lastName" required placeholder="مثال: سليم">
+</div>
+</div>
+<label for="level"><span class="input-icon"><svg viewBox="0 0 24 24"><path d="M4 17v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg> المستوى</span></label>
+<select id="level" name="level" required>
+<option value="">اختر المستوى</option>
+<option>4 متوسط</option>
+<option>1 ثانوي</option>
+<option>2 ثانوي</option>
+<option>3 ثانوي</option>
+</select>
+<label for="phone"><span class="input-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.13.37 2.23.72 3.28a2 2 0 0 1-.45 2.11l-1.27 1.27a16 16 0 0 0 6.29 6.29l1.27-1.27a2 2 0 0 1 2.11-.45c1.05.35 2.15.59 3.28.72A2 2 0 0 1 22 16.92z"/></svg> رقم الهاتف</span></label>
+<input id="phone" name="phone" type="tel" pattern="[0-9+\- ]{6,20}" placeholder="مثال: 0555123456" required>
+<label for="subject"><span class="input-icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M10 10h.01M10 14h.01M14 10h.01M14 14h.01M18 10h.01M18 14h.01"/></svg> مادة الدعم</span></label>
+<select id="subject" name="subject" required>
+<option value="">اختر المادة</option>
+<option value="رياضيات">رياضيات</option>
+<option value="انجليزية">اللغة الإنجليزية</option>
+<option value="عربية">اللغة العربية</option>
+<option value="علوم">العلوم الطبيعية والحياة</option>
+<option value="فيزياء">الفيزياء</option>
+<option value="تاريخ">التاريخ والجغرافيا</option>
+</select>
+<div id="teacherContainer" class="teacher-box" style="display:none">
+<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 16-4 16 0"/></svg>
+<strong>الأستاذ المسؤول:</strong>
+<div id="teacherName" style="margin-top:6px"></div>
+</div>
+<label for="notes"><span class="input-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg> ملاحظات (اختياري)</span></label>
+<textarea id="notes" name="notes" rows="3" placeholder="متى تفضل الحصص، ملاحظات طبية..."></textarea>
+<div class="actions">
+<button type="submit"><svg style="vertical-align:middle;width:20px;height:20px;margin-left:7px;fill:#fff;" viewBox="0 0 24 24"><path d="M2 21l21-9-21-9v7l15 2-15 2z"/></svg>إرسال الطلب</button>
+</div>
+</form>
+<div id="formMsg" class="note"></div>
+</div>
+
+<script>
+// إعداد Firebase (استبدل القيم بما يناسب مشروعك)
+const firebaseConfig = {
+  apiKey: "AIzaSyAE_ki7TsInnIAZloTM7kcTViF26yXVTq8",
+  authDomain: "al-nour-e3599.firebaseapp.com",
+  projectId: "al-nour-e3599",
+  storageBucket: "al-nour-e3599.firebasestorage.app",
+  messagingSenderId: "924086592630",
+  appId: "1:924086592630:web:682b90bef1dad2491ceb57",
+  measurementId: "G-EH5P2JPPJK"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const collection = db.collection('support_submissions');
+
+const form = document.getElementById('supportForm');
+const formMsg = document.getElementById('formMsg');
+
+// ربط المستويات بالمواد والأساتذة
+const levelSubjects = {
+  '4 متوسط': [
+    {subject: 'رياضيات', teacher: 'الأستاذ غدامسي طه'},
+    {subject: 'فيزياء', teacher: 'الأستاذ مبروك مراغني'},
+    {subject: 'علوم', teacher: 'الأستاذ فوحمه لزهر'}
+  ],
+  '1 ثانوي': [
+    {subject: 'رياضيات', teacher: 'الأستاذ غدامسي طه'},
+    {subject: 'فيزياء', teacher: 'الأستاذ عبد الكريم لقديري'}
+    ,{subject: 'علوم', teacher: 'الأستاذة حيللات عائشة'}
+  ],
+  '2 ثانوي': [
+    {subject: 'فيزياء', teacher: 'الأستاذ عبد الكريم لقديري'},
+    {subject: 'علوم', teacher: 'الأستاذة حيللات عائشة'},
+    {subject: 'رياضيات', teacher: 'الأستاذ أحمد زلاسي'}
+  ],
+  '3 ثانوي': [
+    {subject: 'رياضيات', teacher: 'الأستاذ العربي بالعبيدي'},
+    {subject: 'فيزياء', teacher: 'الأستاذ علي نزلي'}
+  ]
+};
+
+const levelSelect = document.getElementById('level');
+const subjectSelect = document.getElementById('subject');
+const teacherContainer = document.getElementById('teacherContainer');
+const teacherName = document.getElementById('teacherName');
+
+levelSelect.addEventListener('change', function() {
+  const level = levelSelect.value;
+  subjectSelect.innerHTML = '<option value="">اختر المادة</option>';
+  if(levelSubjects[level]){
+    levelSubjects[level].forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.subject;
+      opt.textContent = item.subject;
+      subjectSelect.appendChild(opt);
+    });
+    subjectSelect.disabled = false;
+  } else {
+    subjectSelect.disabled = true;
+    teacherName.textContent = '';
+    teacherContainer.style.display = 'none';
+  }
+  teacherName.textContent = '';
+  teacherContainer.style.display = 'none';
+});
+
+subjectSelect.addEventListener('change', function() {
+  const level = levelSelect.value;
+  const subject = subjectSelect.value;
+  const found = (levelSubjects[level]||[]).find(item => item.subject === subject);
+  if(found){
+    teacherName.textContent = found.teacher;
+    teacherContainer.style.display = '';
+  } else {
+    teacherName.textContent = '';
+    teacherContainer.style.display = 'none';
+  }
+});
+
+form.addEventListener('submit', function(e){
+  e.preventDefault();
+  formMsg.textContent = '';
+  const data = {
+    firstName: form.firstName.value.trim(),
+    lastName: form.lastName.value.trim(),
+    level: form.level.value,
+    phone: form.phone.value.trim(),
+    subject: form.subject.value,
+    teacher: document.getElementById('teacherName').textContent.trim(),
+    notes: form.notes.value.trim(),
+    date: Date.now()
+  };
+  showModal(data);
+});
+
+function showModal(data){
+  // إزالة أي نافذة سابقة
+  const old = document.getElementById('modalBg');
+  if(old) old.remove();
+  // بناء تفاصيل الطلب
+  let details = '';
+  details += `<b>الاسم:</b> ${escapeHtml(data.firstName)}<br>`;
+  details += `<b>اللقب:</b> ${escapeHtml(data.lastName)}<br>`;
+  details += `<b>المستوى:</b> ${escapeHtml(data.level)}<br>`;
+  details += `<b>الهاتف:</b> ${escapeHtml(data.phone)}<br>`;
+  details += `<b>المادة:</b> ${escapeHtml(data.subject)}<br>`;
+  if(data.teacher) details += `<b>الأستاذ:</b> ${escapeHtml(data.teacher)}<br>`;
+  if(data.notes) details += `<b>ملاحظات:</b> ${escapeHtml(data.notes)}<br>`;
+  const modal = document.createElement('div');
+  modal.className = 'modal-bg';
+  modal.id = 'modalBg';
+  modal.innerHTML = `<div class='modal'><h3>تأكيد تفاصيل التسجيل</h3><div class='details'>${details}</div><div class='modal-actions'><button class='confirm'>تأكيد</button><button class='cancel'>إلغاء</button></div></div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('.cancel').onclick = ()=>modal.remove();
+  modal.querySelector('.confirm').onclick = function(){
+    modal.remove();
+    sendToFirebase(data);
+  };
+}
+
+function sendToFirebase(data){
+  formMsg.textContent = '';
+  collection.add(data).then(()=>{
+    showSuccessModal();
+    form.reset();
+    teacherName.textContent = '';
+    teacherContainer.style.display = 'none';
+  }).catch(()=>{
+    formMsg.textContent = 'حدث خطأ أثناء الإرسال. حاول مجددًا.';
+  });
+}
+
+function showSuccessModal(){
+  const old = document.getElementById('modalBg');
+  if(old) old.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal-bg';
+  modal.id = 'modalBg';
+  modal.innerHTML = `<div class='modal' style='text-align:center'>
+    <svg style='width:54px;height:54px;fill:#43a047;margin-bottom:10px;' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='#e8f5e9'/><path d='M7 13l3 3 7-7' stroke='#43a047' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>
+    <h3 style='color:#43a047'>تم إرسال الطلب بنجاح!</h3>
+    <div style='margin:12px 0 18px 0;color:#333'>شكراً لتسجيلك في دعم دروس مدرسة النور.</div>
+    <div class='modal-actions' style='justify-content:center'>
+      <button class='confirm' style='min-width:90px'>حسناً</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('.confirm').onclick = ()=>modal.remove();
+}
+
+function escapeHtml(s){
+  if(!s) return '';
+  return String(s).replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]});
+}
+</script>
+</body>
+</html>

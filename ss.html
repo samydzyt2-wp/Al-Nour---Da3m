@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>قائمة الطلبات المرسلة</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Firebase App (يجب وضع السكريبتات قبل أي كود يستخدم Firebase) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+body {
+  font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  color: #222;
+  min-height: 100vh;
+  direction: rtl;
+}
+.card {
+  max-width: 1100px;
+  margin: 32px auto 32px auto;
+  background: #fff;
+  padding: 36px 28px 28px 28px;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(44,62,80,0.13);
+  border: 1px solid #e0e0e0;
+  position: relative;
+  overflow-x: auto;
+}
+h2 {
+  margin-top: 0;
+  color: #1976d2;
+  font-size: 2.1rem;
+  text-align: center;
+  margin-bottom: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.controls {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.small {
+  font-size: 15px;
+  color: #7f8c8d;
+  font-style: italic;
+  margin-left: 12px;
+}
+.btn, #levelFilter {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  background: #fafdff;
+  color: #1976d2;
+  box-shadow: 0 2px 8px #1976d22a;
+  transition: all 0.2s;
+  outline: none;
+  border: 1px solid #d0d7e2;
+}
+.btn:hover, #levelFilter:hover {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-color: #90caf9;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 18px;
+  font-size: 15px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(25,118,210,0.07);
+}
+th, td {
+  padding: 14px 16px;
+  text-align: right;
+  border-bottom: 1px solid #e3e8f0;
+}
+th {
+  background: #f5f7fa;
+  color: #1976d2;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 15px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+th.sortable:hover {
+  background: #e3f2fd;
+}
+th.sortable.asc::after {
+  content: ' ↑';
+  color: #1976d2;
+}
+th.sortable.desc::after {
+  content: ' ↓';
+  color: #1976d2;
+}
+tr:nth-child(even) {
+  background: #f8fafd;
+}
+tr:hover {
+  background: #e3f2fd;
+  transition: background 0.2s;
+}
+.empty {
+  padding: 48px 0;
+  text-align: center;
+  color: #6c757d;
+  font-size: 20px;
+  font-style: italic;
+  background: none;
+}
+::-webkit-scrollbar {
+  height: 8px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d7e2;
+  border-radius: 8px;
+}
+@media (max-width: 900px) {
+  .card {
+    max-width: 99vw;
+    padding: 18px 2vw 18px 2vw;
+  }
+  table {
+    font-size: 13px;
+  }
+  th, td {
+    padding: 8px 7px;
+  }
+}
+@media (max-width: 600px) {
+  .card {
+    padding: 8vw 2vw 8vw 2vw;
+    margin: 10px 0;
+  }
+  h2 {
+    font-size: 1.2rem;
+  }
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .btn, #levelFilter {
+    width: 100%;
+    font-size: 15px;
+    padding: 10px 0;
+  }
+  table {
+    font-size: 12px;
+  }
+  th, td {
+    padding: 7px 4px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>قائمة الطلبات المرسلة</h2>
+<div class="controls">
+<div class="small">تحديث تلقائي عند تحميل الصفحة</div>
+<select id="levelFilter" class="btn" style="background:#f8f9fa;color:#1976d2;min-width:140px;max-width:220px;">
+<option value="">كل المستويات</option>
+<option>4 متوسط</option>
+<option>1 ثانوي</option>
+<option>2 ثانوي</option>
+<option>3 ثانوي</option>
+</select>
+</div>
+
+<div id="resultsArea"></div>
+</div>
+
+<script>
+// إعداد Firebase (استبدل القيم بما يناسب مشروعك)
+const firebaseConfig = {
+  apiKey: "AIzaSyAE_ki7TsInnIAZloTM7kcTViF26yXVTq8",
+  authDomain: "al-nour-e3599.firebaseapp.com",
+  projectId: "al-nour-e3599",
+  storageBucket: "al-nour-e3599.firebasestorage.app",
+  messagingSenderId: "924086592630",
+  appId: "1:924086592630:web:682b90bef1dad2491ceb57",
+  measurementId: "G-EH5P2JPPJK"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const collection = db.collection('support_submissions');
+
+const resultsArea = document.getElementById('resultsArea');
+let currentSortKey = 'date';
+let currentSortDir = 'desc';
+let currentLevelFilter = '';
+
+function render(sortKey = currentSortKey, sortDir = currentSortDir, levelFilter = currentLevelFilter){
+  currentSortKey = sortKey;
+  currentSortDir = sortDir;
+  currentLevelFilter = levelFilter;
+  resultsArea.innerHTML = '<div class="empty">جاري التحميل...</div>';
+  collection.get().then(snapshot => {
+    let data = snapshot.docs.map(doc => doc.data());
+    if(levelFilter){
+      data = data.filter(row => row.level === levelFilter);
+    }
+    if(!data.length){
+      resultsArea.innerHTML = '<div class="empty">لا توجد نتائج محفوظة بعد.</div>';
+      return;
+    }
+    // Sort data
+    data.sort((a, b) => {
+      let aVal, bVal;
+      if(sortKey === 'name'){
+        aVal = (a.firstName || '') + ' ' + (a.lastName || '');
+        bVal = (b.firstName || '') + ' ' + (b.lastName || '');
+      } else if(sortKey === 'date'){
+        aVal = new Date(a[sortKey] || 0);
+        bVal = new Date(b[sortKey] || 0);
+      } else {
+        aVal = a[sortKey] || '';
+        bVal = b[sortKey] || '';
+      }
+      if(aVal < bVal) return sortDir === 'asc' ? -1 : 1;
+      if(aVal > bVal) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    let html = '<table><thead><tr>' +
+      '<th class="sortable" data-sort="name">الاسم واللقب</th><th class="sortable" data-sort="level">المستوى</th><th class="sortable" data-sort="phone">الهاتف</th><th class="sortable" data-sort="subject">المادة</th><th class="sortable" data-sort="teacher">الأستاذ</th><th class="sortable" data-sort="notes">ملاحظات</th><th class="sortable" data-sort="date">تاريخ الإرسال</th>' +
+      '</tr></thead><tbody>';
+    for(const row of data){
+      const name = (row.firstName || '') + ' ' + (row.lastName || '');
+      const date = row.date ? new Date(row.date).toLocaleString('ar-AL') : '';
+      html += `<tr><td>${escapeHtml(name)}</td><td>${escapeHtml(row.level)}</td><td>${escapeHtml(row.phone)}</td><td>${escapeHtml(row.subject)}</td><td>${escapeHtml(row.teacher)}</td><td>${escapeHtml(row.notes)}</td><td>${escapeHtml(date)}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    resultsArea.innerHTML = html;
+    // Add event listeners and update indicators
+    const ths = resultsArea.querySelectorAll('th.sortable');
+    ths.forEach(th => {
+      th.classList.remove('asc', 'desc');
+      if(th.dataset.sort === currentSortKey){
+        th.classList.add(currentSortDir);
+      }
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if(currentSortKey === key){
+          currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSortKey = key;
+          currentSortDir = 'asc';
+        }
+        render();
+      });
+    });
+  }).catch(()=>{
+    resultsArea.innerHTML = '<div class="empty">حدث خطأ أثناء جلب البيانات.</div>';
+  });
+}
+
+function escapeHtml(s){
+  if(!s) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  };
+  return String(s).replace(/[&<>"']/g, function(m){return map[m];});
+}
+
+document.getElementById('levelFilter').addEventListener('change', function(){
+  render(currentSortKey, currentSortDir, this.value);
+});
+
+// تنفيذ العرض عند التحميل
+render();
+</script>
+</body>
+</html>
